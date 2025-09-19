@@ -7,6 +7,9 @@ Generates:
   - embedded_build.c → contains the arrays and file map
   - embedded_build.h → contains externs + struct definition
 
+Build by: Cao Khai Minh
+Update Date: 19/09/2025
+
 Usage:
     python3 folder_to_carrays.py <input_folder> <output_base>
 Example:
@@ -51,19 +54,24 @@ def guess_mime_type(file_path: str) -> str:
     return mime if mime else "application/octet-stream"
 
 def file_to_c_array(file_path, array_name, f_c):
-    """Write one file as a C array"""
+    """Write one file as a C string literal with hex escapes"""
     with open(file_path, "rb") as f_in:
         data = f_in.read()
 
     f_c.write(f"// File: {file_path}\n")
-    f_c.write(f"const unsigned char {array_name}[] = {{\n")
+    f_c.write(f"const unsigned char {array_name}[] = \n")
 
+    # Write as string literal with hex escapes, wrap lines for readability
+    line = '"'
     for i, b in enumerate(data):
-        end = "," if i < len(data) - 1 else ""
-        newline = "\n" if (i + 1) % 12 == 0 else " "
-        f_c.write(f"0x{b:02x}{end}{newline}")
+        line += f"\\x{b:02x}"
+        if (i + 1) % 16 == 0:  # wrap every 16 bytes
+            f_c.write(line + '"\n')
+            line = '"'
+    if line != '"':  # flush remainder
+        f_c.write(line + '"\n')
 
-    f_c.write("\n};\n")
+    f_c.write(";\n")
     f_c.write(f"const unsigned int {array_name}_len = {len(data)};\n\n")
 
 # -----------------------------
@@ -118,3 +126,4 @@ with open(c_file, "w") as f_c, open(h_file, "w") as f_h:
     f_h.write("extern int embedded_files_count;\n")
 
 print(f"✅ Generated {c_file} and {h_file}")
+
